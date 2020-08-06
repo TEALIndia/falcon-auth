@@ -274,17 +274,20 @@ class BasicAuthBackend(AuthBackend):
             credentials or return `None` to indicate if no user found or credentials
             mismatch.
 
+        sqlite_connection(required): SQLite connection object
+
         auth_header_prefix(string, optional): A prefix that is used with the
             bases64 encoded credentials in the `Authorization` header. Default is
             ``basic``
 
     """
 
-    def __init__(self, user_loader,
+    def __init__(self, user_loader, sqlite_connection,
                  auth_header_prefix='Basic'):
 
         self.user_loader = user_loader
         self.auth_header_prefix = auth_header_prefix
+        self.sqlite_connection = sqlite_connection
 
     def _extract_credentials(self, req):
         auth = req.get_header('Authorization')
@@ -311,7 +314,8 @@ class BasicAuthBackend(AuthBackend):
         object if successful else raise an `falcon.HTTPUnauthorized exception`
         """
         username, password = self._extract_credentials(req)
-        user = self.user_loader(username, password)
+        connection = self.sqlite_connection
+        user = self.user_loader(connection, username, password)
         if not user:
             raise falcon.HTTPUnauthorized(
                 description='Invalid Username/Password')
